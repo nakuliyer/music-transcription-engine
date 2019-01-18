@@ -1,5 +1,5 @@
 # music-transcription-engine
 -----
 
-#### Computer Science 600 Research Project
+<center>Computer Science 600 Research Project</center>
 -----
