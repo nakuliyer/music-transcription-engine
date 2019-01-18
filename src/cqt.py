@@ -5,6 +5,9 @@ from scipy.sparse import csc_matrix
 import sys
 import matplotlib.pyplot as plt
 
+def reduce_spec(specgram):
+    return 20*np.log10(specgram)
+
 class CQT:
     def __init__(self,
                  filters_per_octave,
@@ -52,14 +55,13 @@ class CQT:
     def load_cqt_kernel():
         pass
 
-    def specgram(self, data, sample_rate=44100, time_step=2000):
+    def specgram(self, data, sample_rate, time_step):
         """
         """
         num_time_frames = int(np.ceil(len(data)/time_step)-1)
-
         #print("Padding Data")
-        data = np.pad(data, (int(np.ceil((self.fft_len - time_step) / 2)),
-                                          int(np.floor((self.fft_len - time_step) / 2))), 'constant',
+        data = np.pad(data, (int(np.ceil(abs(self.fft_len - time_step) / 2)),
+                                          int(np.floor(abs(self.fft_len - time_step) / 2))), 'constant',
                               constant_values=(0, 0))
 
         # We're returning a spectrogram of size
@@ -76,13 +78,13 @@ class CQT:
             specgram[:, t] = abs(sparse_ker * np.fft.fft(data[data_idx:data_idx + fft_len]))
         return specgram
 
-    def disp_spec(self, data, sample_rate=44100, time_step=2000):
+    def disp_spec(self, data, sample_rate, time_step):
         """
         """
         specgram = self.specgram(data, sample_rate, time_step)
-        plt.imshow(20*np.log10(specgram), aspect='auto', cmap='jet', origin='lower')
+        plt.imshow(reduce_spec(specgram), aspect='auto', cmap='jet', origin='lower')
         plt.title('CQT spectrogram')
-        plt.xticks(np.round(np.arange(1, np.floor(len(data)/sample_rate)+1)*sample_rate/2000),
+        plt.xticks(np.round(np.arange(1, np.floor(len(data)/sample_rate)+1)*sample_rate/time_step),
                    np.arange(1, int(np.floor(len(data)/sample_rate))+1))
         plt.xlabel('Time (s)')
         # Use noteToHz here for yticks
