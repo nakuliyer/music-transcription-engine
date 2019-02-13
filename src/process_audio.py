@@ -1,4 +1,5 @@
 """
+Helper Functions for processing audio
 """
 import scipy.io.wavfile as wav
 import soundfile
@@ -8,6 +9,8 @@ import matplotlib.pyplot as plt
 from cqt import CQT
 import sys
 import pydub
+import time
+from config import *
 
 def audioToData(audio_path):
     if audio_path.endswith(".wav"):
@@ -18,51 +21,28 @@ def audioToData(audio_path):
         return wav.read(audio_path[:-4]+".wav")
     sys.exit("Could not accept data. Try `.wav` file type for best results.")
 
-def init_cqt(filters_per_octave, sample_rate, thresh):
-    return CQT(filters_per_octave, sample_rate, thresh)
+def wav_root_to_data(song_root):
+    return audioToData(song_root + ".wav")
+
+def init_cqt(bins_per_octave, sample_rate, thresh, verbose=False):
+    return CQT(bins_per_octave, sample_rate, thresh, fmin, fmax, verbose)
 
 def constant_q_transform(data, cqt, sample_rate, time_step, image=False):
-    # Do some audio normalization here if necessary
-    if data.ndim > 1:
-         data = data[:,0]
+    data = data/(2.0**(data.itemsize*8-1))
+    data = np.mean(data, 1)
     if image:
         return cqt.disp_spec(data, sample_rate, time_step)
     return cqt.specgram(data, sample_rate, time_step)
 
-# rate, data = audioToData('../sample_data/odetojoy.wav')
-# if data.ndim > 1:
-#     data = data[:,0]
-# time = np.arange(len(data))*1.0/rate
-#
-# plt.plot(time,data)
-# plt.show()
-#
-# print("The shape of the data is {}".format(data.shape))
-# f, t, Zxx = signal.stft(data, fs=rate)
-# print(f.shape)
-# print("T is {}".format(t.shape))
-# print(Zxx.shape)
-# plt.pcolormesh(t, f, np.abs(Zxx))
-# plt.show()
-#
-# spec_data = CQT().specgram(data) # TODO: Give cqt sample rate
-#
-# plt.imshow(spec_data, aspect='auto', cmap='inferno', origin='lower')
-# plt.show()
-
-# nfft = 2**12
-# pxx, freq, bins, plot = plt.specgram(data, NFFT=nfft, Fs=2, cmap="inferno")
-# plt.show()
-
-#print("The shape post_cqt is {}".format(post_cqt.shape))
-#f, t, Sxx = signal.spectrogram(post_cqt, rate)
-#print(f.shape)
-#print("New t is {}".format(t.shape))
-#print(Sxx.shape)
-
-#pxx, freq, bins, plot = plt.specgram(Sxx, NFFT=nfft, Fs=2, cmap="inferno")
-#plt.show()
-#plt.pcolormesh(t, f, np.abs(Sxx))
-#plt.ylabel('Frequency [Hz]')
-#plt.xlabel('Time [sec]')
-#plt.show()
+def onset_detect(specgram):
+    f = specgram.sum(axis=0)
+    spec_len = f.shape[0]
+    print(spec_len)
+    onset_map = np.zeros(spec_len)
+    for m in range(spec_len):
+        if m == 0:
+            onset_map[m] = 1
+        onset_map[m] = (f[m]-f[m-1])/f[m]
+    plt.plot(onset_map)
+    plt.show()
+    return onset_map

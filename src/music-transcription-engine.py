@@ -1,51 +1,54 @@
 """
 Runs the program
 TODO:
-- experiment with stft instead of process_audio
+1. GPU!!!!!!!!!!!!
+1. experiment with stft instead of process_audio
+2. integrate onset_detect with cqt
+3. add verbose to everything
+4. add example test.py files for everything
+5. turn those examples easily into a ipynb
+6. prettify the code (i.e. use two string quotes everywhere, etc)
+7. The thing which finds stuff in the dataset should use regex (i.e. "MAPS_MUS\w+*")
 """
-from dataset import MAPS
+from dataset import MAPS, in_group
+from config import *
 import process_audio
 import time
-import nmf
+#import nmf
+import keras_network as network
 import sys
 
-#mus_path = "/Volumes/CCCOMA_X64FRE_EN-US_DV9/MAPS_COMPLETE"
-mus_path = "/Volumes/CCCOMA_X64FRE_EN-US_DV9/MAPS_SAMPLE"
-maps = MAPS(mus_path)
+# Path to the MAPS Dataset
+mus_path = "/Volumes/CCCOMA_X64FRE_EN-US_DV9/MAPS"
+#mus_path = "/Volumes/CCCOMA_X64FRE_EN-US_DV9/MAPS_SAMPLE"
+#mus_path = "/Users/nakul/Documents/School/CSC 600/MAPS_AkPnBcht_2"
 
-# CQT hyper-parameters
-filters_per_octave = 24
-sample_rate = 44100
-thresh = 0.1
-time_step = 2000
-cqt = process_audio.init_cqt(filters_per_octave, sample_rate, thresh)
-print("Initialized CQT kernel")
+# Verbose means that initialization times and other
+# Functional Time Elapsed information will be printed
+verbose = True
 
-rate, data = process_audio.audioToData("../sample_data/unravel.wav")
-specgram = process_audio.constant_q_transform(data, cqt, sample_rate, time_step, True)
-print(specgram)
-sys.exit()
+# Super Verbose means that some output will be
+# Printed, and should be used only for elementary
+# testing purposes
+super_verbose = True
 
-x = 0
-t = time.time()
-for song_root in maps:
-    #print("Analyzing song {}".format(song_root))
-    wav_name = song_root + ".wav"
-    rate, data = process_audio.audioToData(wav_name)
-    #print("Converted Audio To Data")
+maps = MAPS(mus_path, verbose=verbose, super_verbose=super_verbose)
+net = network.Net(verbose=verbose, optimizer="adam")
 
-    if not rate == sample_rate:
-        # We'll never really fall in here
-        # Since scipy.io.wavfile.read always
-        # Uses a rate of 44.1 kHz but just in case
-        sample_rate = rate
-        cqt = process_audio.init_cqt(filters_per_octave, sample_rate, thresh)
-    #print("Creating Spec")
-    specgram = process_audio.constant_q_transform(data, cqt, sample_rate, time_step, True)
-    print(nmf.nmf(specgram))
-    if x % 100 == 0:
-        print("{}% done loading dataset in {} secs".format(x*100/len(maps), time.time()-t))
-    x += 1
+# print("Train Gen SPE: {}".format(len(maps.train_gen)))
+# print("Validation Gen SPE: {}".format(len(maps.val_gen)))
+# t = time.time()
+# x = 0
+# for i in maps.train_gen:
+#     x += 1
+#     #print("Input shape: {}".format(i[0].shape))
+#     #print("Output shape: {}".format(i[1].shape))
+#     if x % 10:
+#         print("{}% done".format(x * 100))
+#     break
+# print("Generating took {} seconds".format(time.time() - t))
+# print("Steps per Epoch is {}".format(x))
+# sys.exit()
 
-    # Take out this break later on obviously
-    break
+net.train(maps.train_gen, maps.val_gen, verbose=verbose, super_verbose=super_verbose)
+net.evaluate(maps.test_gen, verbose=True)
