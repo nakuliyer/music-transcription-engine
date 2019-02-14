@@ -255,7 +255,7 @@ class MAPS:
                 song_root = wav_name.replace('.wav', '')
                 found = False
                 for name in training_names: # should be group_name to differentiate
-                   if in_group(wav_name, name, pianos=tr_pianos):
+                   if in_group(wav_name, name):
                        temp_group.append(song_root)
                        if temp_group_name == None:
                            temp_group_name = name
@@ -284,7 +284,7 @@ class MAPS:
         if verbose:
             print("Initialized MAPS dataset class in {} seconds".format(time.time() - t))
         if super_verbose:
-            print("MAPS Class: \n{}".format(self.__repr__()))
+            print(self.__repr__())
             print("----------------------------")
             gens = {"Training Generator": self.train_gen,
                     "Validation Generator": self.val_gen,
@@ -292,3 +292,6 @@ class MAPS:
             for gen_name in gens:
                 print("{}: \n{}".format(gen_name, gens[gen_name].__repr__()))
                 print("----------------------------")
+
+    def __repr__(self):
+        return "MAPS Dataset Class with {} processed files and {} unprocessed files".format(self.processed_count, self.unprocessed_count)

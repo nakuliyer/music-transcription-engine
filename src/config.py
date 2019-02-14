@@ -9,19 +9,16 @@ time_step = 2000
 
 # Data generator
 batch_size = 1 # this apparently doesn't work
-# training_names = [
-#     "MAPS_ISOL_NO",
-#     "MAPS_ISOL_LG",
-#     "MAPS_ISOL_ST",
-#     "MAPS_ISOL_RE",
-#     "MAPS_ISOL_CH",
-#     "MAPS_ISOL_TR",
-#     "MAPS_RAND",
-#     "MAPS_UCHO",
-#     "MAPS_MUS"
-# ]
 training_names = [
-    "MAPS_ISOL_NO"
+    "MAPS_ISOL_NO",
+    "MAPS_ISOL_LG",
+    "MAPS_ISOL_ST",
+    "MAPS_ISOL_RE",
+    "MAPS_ISOL_CH",
+    "MAPS_ISOL_TR",
+    "MAPS_RAND",
+    "MAPS_UCHO",
+    "MAPS_MUS"
 ]
 ta_pianos = ["AkPnBcht", "AkPnBsdf", "AkPnCGdD", "AkPnStgb"]
 tg_pianos = ["StbgTGd2", "SptkBGAm", "SptkBGCl"]
