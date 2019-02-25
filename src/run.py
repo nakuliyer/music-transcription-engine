@@ -12,7 +12,7 @@ verbose = True
 # testing purposes
 super_verbose = True
 
-net = Net(verbose=verbose, model="std_gpu", optimizer="adam", reload_model=False, use_cuda=False)
+net = Net(verbose=verbose, model="std_gpu", optimizer="adam", reload_model=True, use_cuda=False)
 
 #ex_test_file = "F:\\MAPS\\MAPS_ENSTDkAm_1\\ENSTDkAm\\ISOL\\NO\\MAPS_ISOL_NO_F_S0_M50_ENSTDkAm"
 #save_location = "..\\output_saves\\MAPS_ISOL_NO_F_S0_M50_ENSTDkAm"

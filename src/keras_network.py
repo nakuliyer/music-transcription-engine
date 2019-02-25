@@ -369,7 +369,7 @@ class Net:
         if reload_model and os.path.isfile(model_loc):
            if verbose:
                print("Found Model at {}".format(model_loc))
-           self.model = load_model(model_loc)
+           self.model = load_model(model_loc, custom_objects={"f1": f1})
         else:
            if verbose:
                print("No Model found. Building new Model")

@@ -50,4 +50,4 @@ midi_max = 108
 num_freqs = int(np.ceil(bins_per_octave*np.log2(fmax/fmin)))
 
 # output of prediction parsing
-output_mask_threshold = 0.5001
+output_mask_threshold = 0.1
