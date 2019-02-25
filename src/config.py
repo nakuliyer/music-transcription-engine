@@ -27,13 +27,13 @@ tr_pianos = ["ENSTDkAm", "ENSTDkCl"]
 train_percent = 0.85
 test_percent = 0.1
 val_percent = 0.05
-training_steps_per_epoch = 10000
+training_steps_per_epoch = 1100
 train_spe = train_percent * training_steps_per_epoch
 test_spe = test_percent * training_steps_per_epoch
 val_spe = val_percent * training_steps_per_epoch
 
 # Training
-epochs = 200
+epochs = 100
 window_size = 7
 input_max_frames = 100 # approximate memory cap on my machine
 alpha = 0.001 # learning rate
@@ -51,4 +51,3 @@ num_freqs = int(np.ceil(bins_per_octave*np.log2(fmax/fmin)))
 
 # output of prediction parsing
 output_mask_threshold = 0.5001
-output_avg_of = 100

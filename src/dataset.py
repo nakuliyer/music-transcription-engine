@@ -68,7 +68,7 @@ def input_windows(specgram):
     return np.array(windows)
 
 class DataGen:
-    def __init__(self, verbose=True, use_batch=False, only_inputs=False):
+    def __init__(self, type=None, verbose=True, use_batch=False, only_inputs=False):
         self.only_inputs = only_inputs
         self.group_idx = 0
         self.group_n = 0
@@ -81,6 +81,7 @@ class DataGen:
         self.initialized = False
         self.epochs = 1
         self.use_batch = False
+        self.type = type
         for name in training_names:
             self.groups[name] = []
 
@@ -165,6 +166,8 @@ class DataGen:
     def __next__(self):
         if not self.initialized:
             self.init()
+        if self.type == "val":
+            print("Validation")
         batch = []
         while len(self.batch_queue) < batch_size:
             # Keep adding to the queue with the next
@@ -203,8 +206,8 @@ class MAPS:
     def __init__(self, mus_path, verbose=False, super_verbose=False, only_inputs_test=False):
         t = time.time()
         self.train_gen = DataGen()
-        self.val_gen = DataGen()
-        self.test_gen = DataGen(only_inputs=only_inputs_test)
+        self.val_gen = DataGen(type="val")
+        self.test_gen = DataGen(type="train", only_inputs=only_inputs_test)
         self.unprocessed_count = 0
         self.processed_count = 0
         for root, dirs, files in os.walk(mus_path):

@@ -31,6 +31,13 @@ class WeightsSaver(Callback):
             self.model.save_weights(name)
         self.batch += 1
 
+class GraphSaver(Callback):
+    def __init__(self, model_name):
+        self.model_name = model_name
+
+    def on_epoch_end(self, epoch, logs={}):
+        draw_plots(self.model_name, logs)
+
 def f1(y_true, y_pred):
     def recall(y_true, y_pred):
         """Recall metric.
@@ -257,6 +264,62 @@ def note_cnn():
     model.add(Activation("sigmoid"))
     return model
 
+def draw_plots(model_name, history_log, keys=["acc", "f1", "loss"]):
+    """
+    Draw plots for ACC, LOSS, and F1 and stores in
+    ../stored_model_data/
+    Parameters
+    ----------
+    model_name : string
+                 Name of the model for storing purpose
+    history_log : dict
+                  Dictionary with keys in keys
+    """
+    print(history_log.keys())
+
+    for key in history_log:
+        if key not in keys:
+            print("Could Not Draw Graphs")
+            return
+
+    plt.plot(history_log['acc'])
+    if "val_acc" in history_log:
+        plt.plot(history_log['val_acc'])
+        plt.legend(['train', 'val'], loc='upper left')
+    else:
+        plt.legend(['train'], loc='upper left')
+    plt.title('Model Accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.savefig(os.path.join("..", "stored_model_data", "{}--acc.png".format(model_name)))
+    plt.close()
+
+    # Plot f1
+    plt.plot(history_log['f1'])
+    if "val_f1" in history_log:
+        plt.plot(history_log['val_f1'])
+        plt.legend(['train', 'val'], loc='upper left')
+    else:
+        plt.legend(['train'], loc='upper left')
+    plt.title('Model F1 Score')
+    plt.ylabel('f1 score')
+    plt.xlabel('epoch')
+    plt.savefig(os.path.join("..", "stored_model_data", "{}--f1.png".format(model_name)))
+    plt.close()
+
+    # Plot loss
+    plt.plot(history_log['loss'])
+    if "val_loss" in history_log:
+        plt.plot(history_log['val_loss'])
+        plt.legend(['train', 'val'], loc='upper left')
+    else:
+        plt.legend(['train'], loc='upper left')
+    plt.title('Model Loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.savefig(os.path.join("..", "stored_model_data", "{}--los.png".format(model_name)))
+    plt.close()
+
 def get_model(model_name):
     if model_name == "std":
         return baseline_model()
@@ -282,7 +345,7 @@ def get_verbosity(verbose, super_verbose):
     return verbosity
 
 class Net:
-    def __init__(self, verbose=False, model="std_gpu", optimizer="adam", loss="binary_crossentropy", use_cuda=True, reload_model=True, use_partial_memory=0, early_stop_on="val_f1"):
+    def __init__(self, verbose=False, model="std_gpu", optimizer="adam", loss="binary_crossentropy", use_cuda=True, reload_model=True, use_partial_memory=0, early_stop_on="val_loss"):
         """Initializes the Neural Network"""
         t = time.time()
 
@@ -314,11 +377,13 @@ class Net:
         self.model.compile(get_optimizer(optimizer),
                            loss=loss,
                            metrics=["acc", f1])
+        self.history = None
         model_checkpoint = ModelCheckpoint(model_loc, monitor="val_loss", verbose=1, save_best_only=False, mode='min')
         early_stopping = EarlyStopping(patience=10, monitor=early_stop_on, verbose=1, mode='min')
         csv_logger_name = "{}_model--train_spe={}--max_frames={}--optimizer={}--loss={}.log".format(model, train_spe, input_max_frames, optimizer, loss if type(loss) is str else "custom")
         csv_logger = CSVLogger(os.path.join("..", "stored_model_data", csv_logger_name))
-        self.callbacks = [model_checkpoint, early_stopping, csv_logger]
+        graph_saver = GraphSaver(self.model_name)
+        self.callbacks = [model_checkpoint, early_stopping, csv_logger, graph_saver]
         if verbose:
             self.model.summary()
             print("Initialized Neural Network in {} seconds".format(time.time() - t))
@@ -328,18 +393,17 @@ class Net:
         Trains on Model
         """
         verbosity = get_verbosity(verbose, super_verbose)
+        if super_verbose:
+            print("Train Gen SPE: {} \nVal Gen SPE: {}".format(train_spe, val_spe))
         self.history = self.model.fit_generator(train_gen,
-                                           steps_per_epoch=train_spe,
+                                           steps_per_epoch=int(train_spe),
                                            epochs=epochs,
                                            verbose=verbosity,
                                            callbacks=self.callbacks,
                                            validation_data=val_gen,
-                                           validation_steps=val_spe)
+                                           validation_steps=int(val_spe))
 
-        if make_plots:
-            self.draw_history_plots()
-
-    def run_test(self, ex_test_file, verbose=False, super_verbose=False):
+    def run_test(self, ex_test_file, verbose=False, super_verbose=False, output_avg_of=100):
         """Tests the model with a given test file"""
         verbosity = get_verbosity(verbose, super_verbose)
 
@@ -347,14 +411,14 @@ class Net:
             print("Getting Spectrogram for test file: {}".format(ex_test_file))
 
         cqt = process_audio.init_cqt(bins_per_octave, sample_rate, thresh, verbose=verbose)
-        rate, data = process_audio.wav_root_to_data(song_root)
+        rate, data = process_audio.wav_root_to_data(ex_test_file)
         if not rate == sample_rate:
             # We'll never really fall in here
             # Since scipy.io.wavfile.read always
             # Uses a rate of 44.1 kHz but just in case
             raise ValueError("rate {} does not equal hyper-parameter sample_rate, {}".format(rate, sample_rate))
-        specgram = process_audio.constant_q_transform(data, preprocess_kernel, sample_rate, time_step)
-        test_inputs = input_windows(ex_test_file, cqt)
+        specgram = process_audio.constant_q_transform(data, cqt, sample_rate, time_step)
+        test_inputs = input_windows(specgram)
         test_num_windows = test_inputs.shape[0]
 
         # Split the song into smaller windows if it is too large
@@ -376,9 +440,7 @@ class Net:
                 if S is None:
                     S = test_case_prediction
                 else:
-                    print("S shape {}, test shape {}".format(S.shape, test_case_prediction.shape))
                     S = np.concatenate((S, test_case_prediction), axis=0)
-                    print("new S shape {}".format(S.shape))
 
             # change S from (time, midi_notes) to (midi_notes, time)
             S = np.abs(S.transpose())
@@ -388,38 +450,12 @@ class Net:
                 avg_S = S
             else:
                 avg_S = np.minimum(avg_S, S)
-        disp_spec(avg_S, len(data), sample_rate, time_step, reduce=False)
+        if verbose:
+            disp_spec(avg_S, len(data), sample_rate, time_step, reduce=False)
+        return avg_S
 
     def draw_history_plots(self):
-        # Plot acceleration
-        plt.plot(self.history.history['acc'])
-        plt.plot(self.history.history['val_acc'])
-        plt.title('Model Accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'val'], loc='upper left')
-        plt.savefig(os.path.join("..", "stored_model_data", "{}--acc.png".format(self.model_name)))
-        plt.close()
-
-        # Plot f1
-        plt.plot(self.history.history['f1'])
-        plt.plot(self.history.history['val_f1'])
-        plt.title('Model F1 Score')
-        plt.ylabel('f1 score')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'val'], loc='upper left')
-        plt.savefig(os.path.join("..", "stored_model_data", "{}--f1.png".format(self.model_name)))
-        plt.close()
-
-        # Plot loss
-        plt.plot(self.history.history['loss'])
-        plt.plot(self.history.history['val_loss'])
-        plt.title('Model Loss')
-        plt.ylabel('loss')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'val'], loc='upper left')
-        plt.savefig(os.path.join("..", "stored_model_data", "{}--los.png".format(self.model_name)))
-        plt.close()
+        draw_plots(self.model_name, self.history.history)
 
     def evaluate(self, test_gen, verbose=False):
         evl = self.model.evaluate_generator(test_gen, steps=test_spe)
