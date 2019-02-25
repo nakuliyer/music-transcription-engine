@@ -80,9 +80,13 @@ def reduce_spec(specgram):
     result = np.nan_to_num(specgram)
     return 20*np.log10(result)
 
-def disp_spec(specgram, data_len, sample_rate, time_step, xticks=True, yticks=True):
+def disp_spec(specgram, data_len, sample_rate, time_step, xticks=True, yticks=True, reduce=True, show=True):
     """Displays spectrogram"""
-    plt.imshow(reduce_spec(specgram), aspect='auto', cmap='inferno', origin='lower')
+    if reduce:
+        plt.imshow(reduce_spec(specgram), aspect='auto', cmap='inferno', origin='lower')
+    else:
+        plt.imshow(specgram, aspect='auto', cmap='inferno', origin='lower')
+    plt.colorbar()
     plt.title('CQT spectrogram')
 
     if xticks:
@@ -99,4 +103,30 @@ def disp_spec(specgram, data_len, sample_rate, time_step, xticks=True, yticks=Tr
         plt.yticks(np.arange(1, 24 * 8, 24),
                    ('A1','A2','A3','A4','A5','A6', 'A7', 'A8'))
     plt.ylabel('Frequency (semitones/log(Hz))')
-    plt.show()
+    if show:
+        plt.show()
+
+def dl_spec(path, specgram, data_len, sample_rate, time_step, xticks=True, yticks=True, reduce=True):
+    """Displays spectrogram"""
+    # assert path ends in png
+    if reduce:
+        plt.imshow(reduce_spec(specgram), aspect='auto', cmap='inferno', origin='lower')
+    else:
+        plt.imshow(specgram, aspect='auto', cmap='inferno', origin='lower')
+    plt.title('CQT spectrogram')
+
+    if xticks:
+        time_ticks = int(np.ceil(data_len/sample_rate))
+
+        plt.xticks(np.round(np.arange(1, time_ticks)*sample_rate/time_step),
+                   np.arange(1, time_ticks))
+    plt.xlabel('Time (s)')
+
+    if yticks:
+        # Use noteToHz here for yticks
+        # plt.yticks(np.arange(1, self.bins_per_octave * 6, self.bins_per_octave),
+        #         ('A1 (55 Hz)','A2 (110 Hz)','A3 (220 Hz)','A4 (440 Hz)','A5 (880 Hz)','A6 (1760 Hz)'))
+        plt.yticks(np.arange(1, 24 * 8, 24),
+                   ('A1','A2','A3','A4','A5','A6', 'A7', 'A8'))
+    plt.ylabel('Frequency (semitones/log(Hz))')
+    plt.savefig(path)

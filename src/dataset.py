@@ -10,14 +10,10 @@ from config import *
 import numpy as np
 import time
 import process_audio
-import matplotlib.pyplot as plt
 from utilities import HzToNote, in_group, disp_spec
 
 def ground_truth(song_root, max_length):
     """
-    TODO:
-        - rename max_length
-        - note_range should be 88 not 108, and given by noteToHz tools
     Returns output as frequency-time numpy ndarray
     Parameters
     ----------
@@ -49,45 +45,19 @@ def ground_truth(song_root, max_length):
         # These (min)s are just so that we don't run into errors, and we'll
         # almost always choose the former (unless, for example, the note is too
         # high and beyond our spectrum)
-        piano_roll[min(pitch, note_range - 1), min(onset_time, max_length - 1) : min(offset_time, max_length)] = 1
+        if midi_min <= pitch and pitch <= midi_max:
+            piano_roll[pitch - midi_min, min(onset_time, max_length - 1) : min(offset_time, max_length)] = 1
     return np.transpose(piano_roll)
 
-def out_window(specgram):
-    num_windows = specgram.shape[0]
-    specgram = np.pad(specgram, ((0, 1), (0, 0)), "constant")
-    windows = []
-    for i in range(num_windows):
-        w = specgram[i:i+1,:]
-        windows.append(w)
-    return np.array(windows)
-
-def get_window_data_len(song_root):
-    rate, data = process_audio.wav_root_to_data(song_root)
-    if not rate == sample_rate:
-        # We'll never really fall in here
-        # Since scipy.io.wavfile.read always
-        # Uses a rate of 44.1 kHz but just in case
-        raise ValueError("rate {} does not equal hyper-parameter sample_rate, {}".format(rate, sample_rate))
-    specgram = process_audio.constant_q_transform(data, preprocess_kernel, sample_rate, time_step)
-
-def input_windows(song_root, preprocess_kernel):
+def input_windows(specgram):
     """
     Returns Windowed Frames of the CQT spectrogram
     Parameters
     ----------
-    song_root : string
-                name of song without postfix (i.e. `.wav`)
-    preprocess_kernel : ndarray
-                        CQT/STFT kernel
+    specgram: ndarray
+              (frequency, time) spectrogram
     Returns array of windows with shape (time_frames, window_size, frequencies)
     """
-    rate, data = process_audio.wav_root_to_data(song_root)
-    if not rate == sample_rate:
-        # We'll never really fall in here
-        # Since scipy.io.wavfile.read always
-        # Uses a rate of 44.1 kHz but just in case
-        raise ValueError("rate {} does not equal hyper-parameter sample_rate, {}".format(rate, sample_rate))
-    specgram = process_audio.constant_q_transform(data, preprocess_kernel, sample_rate, time_step)
     specgram = np.transpose(specgram)
     num_windows = specgram.shape[0]
     specgram = np.pad(specgram, ((window_size // 2, window_size // 2), (0, 0)), "constant")
@@ -98,7 +68,8 @@ def input_windows(song_root, preprocess_kernel):
     return np.array(windows)
 
 class DataGen:
-    def __init__(self, verbose=True):
+    def __init__(self, type=None, verbose=True, use_batch=False, only_inputs=False):
+        self.only_inputs = only_inputs
         self.group_idx = 0
         self.group_n = 0
         self.groups = {}
@@ -109,7 +80,8 @@ class DataGen:
         self.batch_queue = []
         self.initialized = False
         self.epochs = 1
-        self.x = 0
+        self.use_batch = False
+        self.type = type
         for name in training_names:
             self.groups[name] = []
 
@@ -122,14 +94,15 @@ class DataGen:
             self.size += 1
 
     def init(self):
-        """Run this after adding all items"""
-        # Size up everything with output size
-        self.steps_per_epoch = int(np.ceil(self.size / self.batch_size))
+        """Run this after adding all items if using batch"""
+        if self.use_batch:
+            self.steps_per_epoch = int(np.ceil(self.size / self.batch_size))
         self.initialized = True
-        pass
 
     def __len__(self):
-        return self.size - 1
+        if self.use_batch:
+            return self.steps_per_epoch
+        return 0
 
     def __repr__(self):
         group_process_counts = ""
@@ -160,69 +133,60 @@ class DataGen:
             # Return the element and increment group_n and r
             song_root = self.groups[training_names[self.group_idx]][self.group_n]
             self.group_n += 1
-            # Run through loop for input and output
-            """
-            This is really bad code
-            """
-            inputs = input_windows(song_root, self.preprocess_kernel)
-            #outputs = out_window(ground_truth(song_root, inputs.shape[0]))
-            outputs = ground_truth(song_root, inputs.shape[0])
+
+            # Get the input windowed 3D numpy array
+            # Shape is (input_num_windows, window_length, frequencies)
+            rate, data = process_audio.wav_root_to_data(song_root)
+            if not rate == sample_rate:
+                # We'll never really fall in here
+                # Since scipy.io.wavfile.read always
+                # Uses a rate of 44.1 kHz but just in case
+                raise ValueError("rate {} does not equal hyper-parameter sample_rate, {}".format(rate, sample_rate))
+            specgram = process_audio.constant_q_transform(data, self.preprocess_kernel, sample_rate, time_step)
+            inputs = input_windows(specgram)
             input_num_windows = inputs.shape[0]
-            #print("Initial Input Specgram Shape: {}".format(input_specgram.shape))
-            #input_specgram = input_specgram.transpose()
-            #print("Transposed Input Specgram Shape: {}".format(input_specgram.shape))
-            #input_windows = window(input_specgram)
-            #print("Input Windowed Shape: {}".format(input_windows.shape))
-            #input_num_windows = input_windows.shape[0]
-            #display_spectrogram(specgram, len(data), sample_rate, time_step)
-            #####output_windows = window(output_specgram)
-            #display_spectrogram(output, len(data), sample_rate, time_step)
-            #input = input.reshape(1, -1)
-            #####output_num_windows = len(output_windows)
-            #print("Input Number of Windows: {}".format(input_num_windows))
-            #print("Output Number of Windows: {}".format(output_num_windows))
-            #rate, data = process_audio.wav_root_to_data(song_root)
-            #print(len(data))
-            #window_data_len = len(data) / input_num_windows
-            ######################for idx in range(input_num_windows):
-                #print("shape is {}".format(inputs[idx].shape))
-                #print("num windows {}".format(input_num_windows))
-                #disp_spec(np.transpose(inputs[idx]), window_data_len, sample_rate, time_step)
-                #disp_spec(np.transpose(outputs[idx]), window_data_len, sample_rate, time_step)
-                ################batch.append((np.array([inputs[idx]]), outputs[idx]))
-                #print("INPSHAPE: {}\nOUTSHAPE: {}".format(input[idx].shape, output[idx].shape))
-            #print("Input shape is {}".format(input_windows.shape))
-            #print("Output shape is {}".format(output_specgram.shape))
-            #print("INPSHAPE: {}\nOUTSHAPE: {}".format(inputs.shape, outputs.shape))
-            batch.append((inputs, outputs))
+
+            # Get the output frame-by-frame 2D numpy array
+            # Shape is (input_num_windows, midi_frequencies)
+            outputs = ground_truth(song_root, input_num_windows)
+
+            # Split the song into smaller windows if it is too large
+            if input_num_windows >= input_max_frames:
+                i = 0
+                while (i + 1) * input_max_frames < input_num_windows:
+                    input_case = inputs[input_max_frames * i: min(input_max_frames * (i+1), len(inputs) - 1)]
+                    output_case = outputs[input_max_frames * i: min(input_max_frames * (i+1), len(inputs) - 1)]
+                    batch.append((input_case, output_case))
+                    i += 1
+            else:
+                batch.append((inputs, outputs))
             return batch
         return False
 
     def __next__(self):
-        #print("Current x for either test/val: {}".format(self.x))
-        self.x += 1
         if not self.initialized:
             self.init()
+        if self.type == "val":
+            print("Validation")
         batch = []
         while len(self.batch_queue) < batch_size:
             # Keep adding to the queue with the next
             # song's batch until it's full enough
             next_batch = self.batch_next_song()
             if not next_batch:
-                if self.epochs <= epochs + 1: # extra space in case, TODO: +1 should be deleted
+                if self.epochs <= epochs:
                     # regenerate for next epoch
-                    print("Starting Next Epoch!")
-                    print("Epoch count: {}".format(self.epochs))
+                    print("Starting Next Epoch! Count: {}".format(self.epochs))
                     self.group_idx = 0
                     self.group_n = 0
+                    self.epochs += 1
                 else:
                     raise StopIteration()
             else:
                 self.batch_queue.extend(next_batch)
-            #print("Batch queue has length: {}".format(len(self.batch_queue)))
         batch = self.batch_queue[:batch_size]
         self.batch_queue = self.batch_queue[batch_size:]
-        if len(batch) > 0: # this is maybe unnecessary
+        if len(batch) > 0:
             # Convert batch from
             # [(x1, y1), (x2, y2), ...]
             # to
@@ -232,20 +196,18 @@ class DataGen:
             for pair in batch:
                 inputs.append(pair[0])
                 outputs.append(pair[1])
-            #print(len(inputs))
-            #print(len(outputs))
-            #print("input shape {} out shape {}".format(inputs[0].shape, outputs[0].shape))
+            if self.only_inputs:
+                return inputs
             return inputs, outputs
-            #return inputs[0], outputs[0]
         raise StopIteration()
 
 
 class MAPS:
-    def __init__(self, mus_path, verbose=False, super_verbose=False):
+    def __init__(self, mus_path, verbose=False, super_verbose=False, only_inputs_test=False):
         t = time.time()
         self.train_gen = DataGen()
-        self.val_gen = DataGen()
-        self.test_gen = DataGen()
+        self.val_gen = DataGen(type="val")
+        self.test_gen = DataGen(type="train", only_inputs=only_inputs_test)
         self.unprocessed_count = 0
         self.processed_count = 0
         for root, dirs, files in os.walk(mus_path):
