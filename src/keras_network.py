@@ -159,7 +159,7 @@ class Net:
         """
         t = time.time()
         # First assert all the types are valid
-        self.model_name = "resnet_model"#"cnnmodel--{}--{}--{}".format(model, optimizer, loss)
+        self.model_name = "std"#"cnnmodel--{}--{}--{}".format(model, optimizer, loss)
         model_loc = os.path.join("..", "stored_models", "{}.h5".format(self.model_name))
         if os.path.isfile(model_loc) and False:
             if verbose:
@@ -175,7 +175,7 @@ class Net:
                            metrics=["acc", f1])
         model_checkpoint = ModelCheckpoint(model_loc, monitor="val_loss", verbose=1, save_best_only=True, mode='min')
         early_stopping = EarlyStopping(patience=5, monitor="val_loss", verbose=1, mode='min')
-        csv_logger_name = "resnet_model--{}--{}--{}.log".format(model, optimizer, loss)
+        csv_logger_name = "stdmodel--{}--{}--{}.log".format(model, optimizer, loss)
         csv_logger = CSVLogger(os.path.join("..", "stored_model_data", csv_logger_name))
         self.callbacks = [model_checkpoint, early_stopping, csv_logger]
         # TODO: Add TensorBoard for verbose
