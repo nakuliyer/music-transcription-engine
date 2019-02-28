@@ -1,4 +1,10 @@
-from utilities import noteToHz
+"""
+Various configuration values for different areas of the program
+
+author: Nakul Iyer
+date: 2/28/19
+"""
+from utilities import note_to_Hz
 import numpy as np
 
 # CQT hyper-parameters
@@ -23,6 +29,7 @@ training_names = [
 ta_pianos = ["AkPnBcht", "AkPnBsdf", "AkPnCGdD", "AkPnStgb"]
 tg_pianos = ["StbgTGd2", "SptkBGAm", "SptkBGCl"]
 tr_pianos = ["ENSTDkAm", "ENSTDkCl"]
+
 # percentages of dataset
 train_percent = 0.85
 test_percent = 0.1
@@ -42,12 +49,15 @@ beta_2 = 0.999
 momentum = 0.9 # SGD oscillation dampening factor
 decay = 0.0 # rate of change in learning rate
 
-fmin = noteToHz("A0")
-fmax = noteToHz("C8")
-note_range = 88 # should be dependent on other 2
+fmin = note_to_Hz("A0")
+fmax = note_to_Hz("C8")
+note_range = 88
 midi_min = 21
 midi_max = 108
 num_freqs = int(np.ceil(bins_per_octave*np.log2(fmax/fmin)))
 
 # output of prediction parsing
-output_mask_threshold = 0.5001
+# this value should be between 0.1 and 0.3 and not exceed 0.33
+output_mask_threshold = 0.25
+punish_factor = 0.8 # rate at which to punish higher frequencies
+no_chords = True # testing does better on no_chords

@@ -1,16 +1,17 @@
 """
-Loading and manipulating dataset
-The MAPS class is a data generator
-TODO:
-- Minibatch process rather than stream currently will be faster
+Methods for loading and manipulating dataset
+
+author: Nakul Iyer
+date: 2/28/19
 """
 import os
 from glob import glob
-from config import *
 import numpy as np
 import time
+
 import process_audio
-from utilities import HzToNote, in_group, disp_spec
+from utilities import Hz_to_note, in_group, disp_spec
+from config import *
 
 def ground_truth(song_root, max_length):
     """

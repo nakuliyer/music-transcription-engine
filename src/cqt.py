@@ -1,10 +1,17 @@
-import numpy as np
+"""
+Methods for preprocessing data using CQT Transform
+
+author: Nakul Iyer
+date: 2/28/19
+"""
 import os
-from utilities import noteToHz
+import numpy as np
 from scipy.sparse import csc_matrix
 import sys
 import matplotlib.pyplot as plt
 import time
+
+from utilities import note_to_Hz
 from config import *
 
 def reduce_spec(specgram):
