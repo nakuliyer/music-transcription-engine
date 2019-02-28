@@ -19,6 +19,7 @@ The following python modules are necessary and should be installed at the newest
 * Tensorflow
 * Keras
 * MatPlotLib
+
 Alternatively, run `setup.py` to set up all these dependencies if you do not already have them. If you opt to use a GPU with Tensorflow, install Tensorflow with GPU enabled and make sure to allow your GPU to be visible to Tensorflow in your PATH variable (different for each GPU, follow instructions for your specific GPU)
 
 IMPORTANT: The dependency LilyPond is vital for downloading sheet music as a pdf. To install Lilypond, follow the instructions on the website [http://lilypond.org](http://lilypond.org). Essentially, you will need to download the program and run the installation file attached to the installer. Then, put the `/bin` for LilyPond in your PATH variable. For Windows, this path is `C:\Program Files (x86)\LilyPond\usr\bin`. Then, be sure to test in terminal if the command `lilypond` works. If this dependency is not installed, this program will only show notes and their onset/offset times rather than real sheet music.
