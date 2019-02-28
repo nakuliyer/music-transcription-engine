@@ -27,6 +27,7 @@ Finally, the two relevant user-end files are the `src/train.py` and `src/run.py`
 * `python train.py`
 * `python run.py C:/path/to/song.wav C:/path/to/output/save/location.pdf`
 
+As a test, cd into the src folder and try `python run.py ../sample_data/MAPS_ISOL_NO_F_S0_M50_ENSTDkAm.wav test.pdf`. This should produce sheet music with the note D.
 Also, if you are doing training, change the dataset directory path `mus_path` inside the `train.py` file to the path of the MAPS dataset on your local system.
 
 ## Thank you for using Sheet Music Helper!
