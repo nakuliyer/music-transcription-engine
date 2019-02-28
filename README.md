@@ -30,4 +30,4 @@ Finally, the two relevant user-end files are the `src/train.py` and `src/run.py`
 Also, if you are doing training, change the dataset directory path `mus_path` inside the `train.py` file to the path of the MAPS dataset on your local system.
 
 ## Thank you for using Sheet Music Helper!
-Please send any questions about this product to nakulpiyer@gmail.com. Visit our website at github.io! For further reading, please see my `bibliography.pdf` file.
+Please send any questions about this product to nakulpiyer@gmail.com. Visit our website at https://nakuliyer.github.io/music-transcription-engine/site/index.html! For further reading, please see my `bibliography.pdf` file.
