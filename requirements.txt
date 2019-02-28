@@ -3,3 +3,4 @@ scipy>=1.2.1
 tensorflow>=1.13.0-rc1
 keras>=2.2.4
 matplotlib>=3.0.2
+h5py>=2.9.0
