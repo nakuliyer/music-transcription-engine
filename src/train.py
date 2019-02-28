@@ -1,26 +1,17 @@
 """
-Runs the program
-TODO:
-1. experiment with stft instead of process_audio
-2. integrate onset_detect with cqt
-4. add example test.py files for everything
-5. turn those examples easily into a ipynb
-6. prettify the code (i.e. use two string quotes everywhere, etc)
-7. The thing which finds stuff in the dataset should use regex (i.e. "MAPS_MUS\w+*")
+Prepares Data and Trains Model
+Entry point for training; please set mus_path, verbose, and super_verbose
+appropriately
+
+author: Nakul Iyer
+date: 2/28/19
 """
+import time
+
+import process_audio
+import network
 from dataset import MAPS, in_group
 from config import *
-import process_audio
-import time
-#import nmf
-import numpy as np
-from utilities import dl_spec
-import keras_network as network
-import sys
-import os
-import matplotlib.pyplot as plt
-
-start = time.time()
 
 # Path to the MAPS Dataset
 mus_path = "F:\\MAPS"
@@ -34,7 +25,8 @@ verbose = True
 # testing purposes
 super_verbose = True
 
-print("Welcome to MuseSheets!")
+start = time.time()
+print("Welcome to Sheet Music Helper!")
 maps = MAPS(mus_path, verbose=verbose, super_verbose=super_verbose)
 net = network.Net(verbose=verbose, model="std_gpu", optimizer="adam", reload_model=False)
 

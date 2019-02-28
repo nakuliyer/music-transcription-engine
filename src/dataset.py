@@ -1,16 +1,17 @@
 """
-Loading and manipulating dataset
-The MAPS class is a data generator
-TODO:
-- Minibatch process rather than stream currently will be faster
+Methods for loading and manipulating dataset
+
+author: Nakul Iyer
+date: 2/28/19
 """
 import os
 from glob import glob
-from config import *
 import numpy as np
 import time
+
 import process_audio
-from utilities import HzToNote, in_group, disp_spec
+from utilities import Hz_to_note, in_group, disp_spec
+from config import *
 
 def ground_truth(song_root, max_length):
     """
@@ -257,42 +258,3 @@ class MAPS:
 
     def __repr__(self):
         return "MAPS Dataset Class with {} processed files and {} unprocessed files".format(self.processed_count, self.unprocessed_count)
-
-
-#input_num_windows = inputs.shape[0]
-#for idx in range(input_num_windows):
-    #print(inputs[idx].shape, outputs[idx].shape)
-#    batch.append((np.array([inputs[idx]]), outputs[idx]))
-#print("Initial Input Specgram Shape: {}".format(input_specgram.shape))
-#input_specgram = input_specgram.transpose()
-#print("Transposed Input Specgram Shape: {}".format(input_specgram.shape))
-#input_windows = window(input_specgram)
-#print("Input Windowed Shape: {}".format(input_windows.shape))
-#input_num_windows = input_windows.shape[0]
-#display_spectrogram(specgram, len(data), sample_rate, time_step)
-#####output_windows = window(output_specgram)
-#display_spectrogram(output, len(data), sample_rate, time_step)
-#input = input.reshape(1, -1)
-#####output_num_windows = len(output_windows)
-#print("Input Number of Windows: {}".format(input_num_windows))
-#print("Output Number of Windows: {}".format(output_num_windows))
-#rate, data = process_audio.wav_root_to_data(song_root)
-#print(len(data))
-#window_data_len = len(data) / input_num_windows
-######################for idx in range(input_num_windows):
-    #print("shape is {}".format(inputs[idx].shape))
-    #print("num windows {}".format(input_num_windows))
-    #disp_spec(np.transpose(inputs[idx]), window_data_len, sample_rate, time_step)
-    #disp_spec(np.transpose(outputs[idx]), window_data_len, sample_rate, time_step)
-    ################batch.append((np.array([inputs[idx]]), outputs[idx]))
-    #print("INPSHAPE: {}\nOUTSHAPE: {}".format(input[idx].shape, output[idx].shape))
-#print("Input shape is {}".format(input_windows.shape))
-#print("Output shape is {}".format(output_specgram.shape))
-#print("INPSHAPE: {}\nOUTSHAPE: {}".format(inputs.shape, outputs.shape))
-#batch.append((inputs, outputs))
-
-
-
-                # inputs = inputs[0:input_max_frames]
-                # outputs = outputs[0:input_max_frames]
-                # batch.append((inputs, outputs))

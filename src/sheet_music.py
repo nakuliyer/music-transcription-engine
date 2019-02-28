@@ -2,10 +2,13 @@
 Methods for returning sheet music from a piano roll. Much of this code is
 inspired by http://zulko.github.io/blog/2014/02/12/transcribing-piano-rolls/,
 which is a tutorial for converting piano music into sheet music using lilypond.
+
 author: Nakul Iyer
+date: 2/28/19
 """
 import numpy as np
 import os
+import subprocess
 
 from config import *
 
@@ -17,6 +20,10 @@ def fourier_transform(signal, period, tt):
     f = lambda function: (signal * function(2*np.pi*tt / period)).sum()
     return f(np.cos) + 1j * f(np.sin)
 
+def reg_time_to_note(duration, quarter_duration):
+    """Converts regular time intervals into note intervals"""
+    return 0.5*int((4.0*duration/quarter_duration+1)/2)
+
 def quantize(notes, quarter_duration):
     """
     Quantize notes into lilypond format. Adapted directly from
@@ -27,9 +34,9 @@ def quantize(notes, quarter_duration):
 
     for note in notes:
         # the next line quantizes that time in eights.
-        delay_q = 0.5*int((4.0*note.duration/quarter_duration+1)/2)
+        delay_q = reg_time_to_note(note.duration, quarter_duration)
 
-        if (delay_q == 0):
+        if (delay_q == 0) and not no_chords:
             # put note in previous chord
             if note.pitch not in result[-1]['notes']:
                 result[-1]['notes'].append(note.pitch)
@@ -74,8 +81,10 @@ def get_duration(duration):
     elif duration < 0.0625:
         return "64"
     elif duration > 4:
-        return "1"
+        return "1 " + get_duration(duration - 4)
     else:
+        # This catch-all is not really great, but the best we can really do
+        # if we don't know the note duration
         return "4"
 
 def midi_to_lily(midi_pitch):
@@ -86,19 +95,39 @@ def midi_to_lily(midi_pitch):
 
 def strike_to_lily(strike):
     """Converts chord strikes to lily notes"""
-    notes = strike['notes']
-    duration = strike['duration']
+    notes = strike["notes"]
+    duration = strike["duration"]
+    onset = strike["t_strike"]
 
     if len(notes) > 1:
         # chord
         chord = ' '.join(map(midi_to_lily, sorted(notes)))
-        return "< {} >{}".format(chord, get_duration(duration))
+        result = ""
+        for dur in get_duration(duration).split(' '):
+            result += "< {} >{}\n".format(chord, dur)
+        return result, onset
     else:
-        return midi_to_lily(notes[0]) + get_duration(duration)
+        result = ""
+        for dur in get_duration(duration).split(' '):
+            result += "{}{}\n".format(midi_to_lily(notes[0]), dur)
+        return result, onset
 
-def lily_score(strikes):
+def lily_score(strikes, quarter_note_duration):
     """Converts a python list of srikes into Lilypond"""
-    return "\n".join(map(strike_to_lily, strikes))
+    strike_list = []
+    last_strike_time = 0
+    for strike in strikes:
+        ls = strike_to_lily(strike)
+        frame_interval = ls[1] - last_strike_time
+        note_time_interval = reg_time_to_note(frame_interval, quarter_note_duration)
+        # Add in rests
+        result = ""
+        for dur in get_duration(note_time_interval).split(' '):
+            result += "r{}\n".format(dur)
+        strike_list.append(result)
+        last_strike_time = ls[1]
+        strike_list.append(ls[0])
+    return "\n".join(strike_list)
 
 class Note:
     def __init__(self, pitch, onset_frame, offset_frame):
@@ -138,7 +167,7 @@ def piano_roll_to_sheet_music(piano_roll, save_location):
                 offset_frame = time_idx
                 notes.append(Note(pitch, current_onset, offset_frame))
     if len(notes) == 0:
-        SystemError("No Notes Detected")
+        raise SystemError("No Notes Detected")
     strike_times = piano_roll.sum(axis=0)
     tt = np.arange(len(strike_times))
     durations = np.arange(1.1, 30, 0.02)
@@ -156,8 +185,8 @@ def piano_roll_to_sheet_music(piano_roll, save_location):
     left_hand_quantized = quantize(left_hand, quarter_note_duration)
     right_hand_quantized = quantize(right_hand, quarter_note_duration)
 
-    left_hand_lily = lily_score(left_hand_quantized)
-    right_hand_lily = lily_score(right_hand_quantized)
+    left_hand_lily = lily_score(left_hand_quantized, quarter_note_duration)
+    right_hand_lily = lily_score(right_hand_quantized, quarter_note_duration)
 
     ly_location = "{}.ly".format(save_location)
 
@@ -165,10 +194,23 @@ def piano_roll_to_sheet_music(piano_roll, save_location):
         lily_sequence = "\\score {\\new StaffGroup{ <<\\set StaffGroup.systemStartDelimiter = #'SystemStartSquare \\new Staff {\\clef treble " + right_hand_lily + " } \\new Staff {\\clef bass " + left_hand_lily + " }>>}}"
         f.write(lily_sequence)
 
-    os.system("lilypond {}".format(ly_location))
+    cmd = "lilypond {}".format(ly_location)
+    saving_pdf = False
+    try:
+        subprocess.call("lilypond")
+        saving_pdf = True
+    except OSError:
+        print("LilyPond is not properly installed. Saving instead to seperate txt files.")
+        txt_location = "{}.txt".format(save_location)
+        with open(txt_location, "w+") as f:
+            f.write("Right Hand: {} \n Left Hand: {}".format(right_hand_lily, left_hand_lily))
+        print("Successfully saved as text file")
 
-    # Remove the original ly file
-    os.remove(ly_location)
+    if saving_pdf:
+        os.system(cmd)
 
-    # Move the file to the save location
-    os.rename("{}.pdf".format(os.path.basename(save_location)), "{}.pdf".format(save_location))
+        # Remove the original ly file
+        os.remove(ly_location)
+
+        # Move the file to the save location
+        os.rename("{}.pdf".format(os.path.basename(save_location)), "{}.pdf".format(save_location))

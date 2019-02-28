@@ -1,19 +1,19 @@
 """
 Various useful utilities
+
+author: Nakul Iyer
+date: 2/28/19
 """
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-from config import *
 
 A4 = 440 # standard tuning
 C0 = A4*(2**(-4.75))
 notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
-def HzToNote(freq):
+def Hz_to_note(freq):
     """
-    TODO:
-        - rename pythonically
     Parameters
     ----------
     freq : float
@@ -28,7 +28,7 @@ def HzToNote(freq):
     note_index = half_steps % 12
     return notes[note_index] + str(octave)
 
-def noteToHz(s):
+def note_to_Hz(s):
     """
     Parameters
     ----------
@@ -80,7 +80,7 @@ def reduce_spec(specgram):
     result = np.nan_to_num(specgram)
     return 20*np.log10(result)
 
-def disp_spec(specgram, data_len, sample_rate, time_step, xticks=True, yticks=True, reduce=True, show=True):
+def disp_spec(specgram, data_len, sample_rate, time_step, xticks=True, yticks=True, reduce=True, show=True, dloc=None):
     """Displays spectrogram"""
     if reduce:
         plt.imshow(reduce_spec(specgram), aspect='auto', cmap='inferno', origin='lower')
@@ -97,24 +97,18 @@ def disp_spec(specgram, data_len, sample_rate, time_step, xticks=True, yticks=Tr
     plt.xlabel('Time (s)')
 
     if yticks:
-        # Use noteToHz here for yticks
-        # plt.yticks(np.arange(1, self.bins_per_octave * 6, self.bins_per_octave),
-        #         ('A1 (55 Hz)','A2 (110 Hz)','A3 (220 Hz)','A4 (440 Hz)','A5 (880 Hz)','A6 (1760 Hz)'))
-        plt.yticks(np.arange(1, 24 * 8, 24),
-                   ('A1','A2','A3','A4','A5','A6', 'A7', 'A8'))
+        plt.yticks(np.arange(0, 24 * 8, 24),
+                   ('A0','A1','A2','A3','A4','A5', 'A6', 'A7'))
     plt.ylabel('Frequency (semitones/log(Hz))')
+    if dloc:
+        plt.savefig(dloc + ".png")
     if show:
         plt.show()
 
-def dl_spec(path, specgram, data_len, sample_rate, time_step, xticks=True, yticks=True, reduce=True):
-    """Displays spectrogram"""
-    # assert path ends in png
-    if reduce:
-        plt.imshow(reduce_spec(specgram), aspect='auto', cmap='inferno', origin='lower')
-    else:
-        plt.imshow(specgram, aspect='auto', cmap='inferno', origin='lower')
-    plt.title('CQT spectrogram')
-
+def disp_roll(piano_roll, data_len, sample_rate, time_step, xticks=True, yticks=True, show=True, dloc=None):
+    """Displays Piano-Roll"""
+    plt.imshow(piano_roll, aspect='auto', cmap='inferno', origin='lower')
+    plt.title('Piano Roll')
     if xticks:
         time_ticks = int(np.ceil(data_len/sample_rate))
 
@@ -123,10 +117,10 @@ def dl_spec(path, specgram, data_len, sample_rate, time_step, xticks=True, ytick
     plt.xlabel('Time (s)')
 
     if yticks:
-        # Use noteToHz here for yticks
-        # plt.yticks(np.arange(1, self.bins_per_octave * 6, self.bins_per_octave),
-        #         ('A1 (55 Hz)','A2 (110 Hz)','A3 (220 Hz)','A4 (440 Hz)','A5 (880 Hz)','A6 (1760 Hz)'))
-        plt.yticks(np.arange(1, 24 * 8, 24),
-                   ('A1','A2','A3','A4','A5','A6', 'A7', 'A8'))
-    plt.ylabel('Frequency (semitones/log(Hz))')
-    plt.savefig(path)
+        plt.yticks(np.arange(0, 88, 12),
+                   ('A0','A1','A2','A3','A4','A5', 'A6', 'A7'))
+    plt.ylabel('Midi Note')
+    if dloc:
+        plt.savefig(dloc + ".png")
+    if show:
+        plt.show()
