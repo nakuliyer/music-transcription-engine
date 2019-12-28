@@ -3,11 +3,13 @@
 ### By Nakul Iyer, with help from Dr. Nicholas Zufelt
 #### Phillips Academy, February 2019
 
+**This repository was created for a school project and was last updated on February 28, 2019. It has not been tested yet for future compatibility. Sorry!**
+
 ## Intro
-The purpose of this project was to create an automatic music transcription engine using convolutional neural networks. Commentary on the successes and failures of the project can be found in `documentation.pdf`
+The purpose of this project was to create an automatic music transcription engine using convolutional neural networks. Commentary on the successes and failures of the project can be found in `docs/documentation-short-ver.pdf`
 
 ## Background Knowledge
-Constant-Q Transform, Signal Processing, Non-Negative Matrix Factorization, Convolutional Neural Networks, Spectrograms, Tensorflow/Keras, Short-Time Fourier Transform (See `bibliography.pdf` and `documentation.pdf`)
+Constant-Q Transform, Signal Processing, Non-Negative Matrix Factorization, Convolutional Neural Networks, Spectrograms, Tensorflow/Keras, Short-Time Fourier Transform (See `docs/documentation-short-ver.pdf`)
 
 ## Dataset
 MAPS (Midi-Aligned Piano Sounds)
